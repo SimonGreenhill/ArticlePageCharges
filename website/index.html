@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How much is that article?</title>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+</head>
+<body>
+    <h1>How Much Is That Journal?</h1>
+    
+    <p>Want to help? <a href="https://github.com/SimonGreenhill/ArticlePageCharges/">add data or corrections here</a>.</p>
+    
+    <table id="csv-table" class="display" style="width:100%"></table>
+    
+    <script>
+        const csvUrl = "https://raw.githubusercontent.com/SimonGreenhill/ArticlePageCharges/main/charges.csv";
+        
+        async function fetchCSV(url) {
+            const response = await fetch(url);
+            const text = await response.text();
+            return text;
+        }
+        
+        async function getExchangeRates(base = "USD") {
+            const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${base}`);
+            const data = await response.json();
+            return data.rates;
+        }
+        
+        async function convertCurrency(value, rates) {
+            const currencySymbols = {
+                "€": "EUR",
+                "£": "GBP",
+                "$": "USD",
+                '¥': "JPY"
+            };
+
+            const match = value.match(/([€£$¥])([\d,\.]+)/);  // Detect currency symbol and numeric value
+            if (!match) return value; // If no currency symbol is found, return original value
+
+            const symbol = match[1];
+            const amount = parseFloat(match[2].replace(/,/g, '')); // Clean formatting
+            const currencyCode = currencySymbols[symbol] || "USD";
+
+            if (currencyCode in rates) {
+                const convertedAmount = (amount / rates[currencyCode]) * rates["USD"];
+                return `$${convertedAmount.toFixed(2)}`;
+            }
+
+            return value; // Return original value if conversion fails
+        }
+        
+        document.addEventListener("DOMContentLoaded", async () => {
+            try {
+                
+                const csvText = await fetchCSV(csvUrl);
+                const rates = await getExchangeRates();
+                
+                Papa.parse(csvText, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: async (results) => {
+                        const headers = Object.keys(results.data[0] || {});
+                        const data = await Promise.all(
+                            results.data.map(async (row) => {
+                                row["Journal"] = `<a href="${row["URL"]}" target="_blank">${row["Journal"]}</a>`;
+                                row["Cost"] = await convertCurrency(row["Cost"], rates);
+                                return row;
+                        }));
+                        $("#csv-table").DataTable({
+                            data: data,
+                            columns: headers.map(header => ({ title: header, data: header || null })),
+                            paging: false,
+                            searching: true,
+                            ordering: true,
+                            columnDefs: [
+                                { targets: headers.indexOf("URL"), visible: false }
+                            ],
+                            order: [[headers.indexOf("Cost"), 'desc']],
+                            createdRow: function(row, data, dataIndex) {
+                                // Remove any currency symbols and commas
+                                const costValue = parseFloat(data['Cost'].replace(/[^0-9.-]+/g, ""));
+                                const cell = $('td', row).eq(data['Cost']);
+                                const costIndex = headers.indexOf("Cost");
+
+                                if (!isNaN(costValue)) {
+                                    // If the value is larger, apply a red color (you can adjust thresholds and colors)
+                                    if (costValue > 10000) {
+                                        $('td', row).eq(costIndex).css('color', 'red');
+                                    } else if (costValue > 5000) {
+                                        $('td', row).eq(costIndex).css('color', 'orange');
+                                    } else {
+                                        $('td', row).eq(costIndex).css('color', 'green');
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+            } catch (error) {
+                console.error("Error loading CSV:", error);
+                document.getElementById("csv-table").textContent = "Failed to load CSV data.";
+            }
+        });
+    </script>
+</body>
+</html>
