@@ -48,7 +48,7 @@ for row in table.find_all("tr"):
     
     cost = get_cost(cost_text)
     
-    print("2024-01-14,%s,%s,%s,'%s'" % (
+    print("2024-01-14,%s,%s,%s,'%s',Cell Press" % (
         cells['Journal'],
         cost,
         URL,

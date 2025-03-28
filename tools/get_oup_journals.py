@@ -38,7 +38,7 @@ def format_journal(j):
 
 
 for o in read(load(URL)):
-    print("2025-03-28,%s,%s,%s,%s" % (
+    print("2025-03-28,%s,%s,%s,%s,Oxford University Press" % (
         format_journal(o['Journal']),
         format_cost(o),
         "https://academic.oup.com/%s" % o['code'].lower() if o['code'] else '',
