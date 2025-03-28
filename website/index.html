@@ -104,7 +104,7 @@
                         $("#csv-table").DataTable({
                             data: data,
                             columns: headers.map(header => ({ title: header, data: header || null })),
-                            paging: false,
+                            paging: true,
                             searching: true,
                             ordering: true,
                             columnDefs: [
