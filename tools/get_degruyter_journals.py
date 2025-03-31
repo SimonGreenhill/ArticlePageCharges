@@ -33,6 +33,12 @@ def format_price(p):
     except:
         raise ValueError("?? %s" % p)
 
+def format_title(t):
+    if ',' in t:
+        return "'%s'" % t
+    else:
+        return t
+
 
 special_cases = []
 for o in read('DeGruyter_Journal_Price_List_2025__EUR__2024-11-10.xlsx'):
@@ -44,7 +50,7 @@ for o in read('DeGruyter_Journal_Price_List_2025__EUR__2024-11-10.xlsx'):
         special_cases.append(o)
         pass
     print("2025-31-03,%s,De Gruyter,%s,%s,%s" % (
-        o['Title'].strip(),
+        format_title(o['Title'].strip()),
         price,
         o['URL'],
         comment
