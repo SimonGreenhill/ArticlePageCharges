@@ -7,53 +7,54 @@ import sys
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.webdriver.common.by import By
 
 URL = "https://www.cell.com/open-access"
 
-is_euro_amount = re.compile(r"""(£\d+,\d+)""")
+# Matches the first USD price in the cell, e.g. "$8,900" or "$7000"
+first_price = re.compile(r'\$[\d,]+')
 
 def get_cost(text):
-    m = is_euro_amount.findall(text)
-    if len(m):
-        return m[0].replace(",", "")
-    else:
-        print("ERROR PARSING COST FROM:", file=sys.stderr)
-        print(text, file=sys.stderr)
-        return None
+    m = first_price.search(text)
+    if m:
+        return m.group(0).replace(",", "")
+    print(f"ERROR PARSING COST FROM: {text!r}", file=sys.stderr)
+    return None
+
+def get_comment(text, cost):
+    """Return any text after the leading price as a comment."""
+    if cost and text.startswith(cost):
+        return text[len(cost):].strip()
+    return text
 
 driver = webdriver.Firefox()
 driver.get(URL)
 soup = BeautifulSoup(driver.page_source, 'html.parser')
 driver.close()
 
-table = soup.find(id="pricingTbl")
-
-header = [x.text for x in table.find_all('th')]
+table = soup.find(id='pricingTbl')
+headers = [th.get_text(strip=True) for th in table.find_all('th')]
+cost_col = 'Open access fee(excluding taxes)'
 
 writer = csv.writer(sys.stdout)
 writer.writerow(['Date', 'Journal', 'Publisher', 'Cost', 'URL', 'Comment'])
 
-for row in table.find_all("tr"):
-    cells = dict(zip(header, [c.text for c in row.find_all('td')]))
-    if not len(cells):  # empty row
+for row in table.find_all('tr'):
+    cells = dict(zip(headers, [td.get_text(strip=True) for td in row.find_all('td')]))
+    if not cells:
         continue
-    if cells['Journal'] in ('Full open access', 'Hybrid open access'):
+    journal = cells.get('Journal', '').strip()
+    if journal in ('Full open access', 'Hybrid open access', ''):
         continue
 
-    try:
-        cost_text = cells['Open access fee (GBP, EURO, USD)(excluding taxes)']
-    except KeyError:
-        print("Failure parsing:", file=sys.stderr)
-        print(row.find_all('td'), file=sys.stderr)
-        raise
-
+    cost_text = cells.get(cost_col, '')
     cost = get_cost(cost_text)
+    comment = get_comment(cost_text, cost)
+
     writer.writerow([
-        '2024-01-14',
-        cells['Journal'],
+        '2026-05-06',
+        journal,
         'Cell Press',
         cost,
         URL,
-        cost_text,
+        comment,
     ])
