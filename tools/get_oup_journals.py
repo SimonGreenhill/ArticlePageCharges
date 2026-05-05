@@ -29,18 +29,19 @@ def read(wb):
 def format_cost(o):
     curr = {'EUR': '€', 'GBP': '£', 'USD': '$', 'JPY': '¥'}.get(o['APC Base Currency'].strip())
     assert curr is not None, repr(o['APC Base Currency'])
-    return "%s%s" % (curr, o["2024 price"])
+    return "%s%s" % (curr, o["APC rate"])
 
 
 writer = csv.writer(sys.stdout)
 writer.writerow(['Date', 'Journal', 'Publisher', 'Cost', 'URL', 'Comment'])
 
 for o in read(load(URL)):
-    writer.writerow([
-        '2025-03-28',
-        o['Journal'],
-        'Oxford University Press',
-        format_cost(o),
-        "https://academic.oup.com/%s" % o['code'].lower() if o['code'] else '',
-        '',
-    ])
+    if o['APC Base Currency']:
+        writer.writerow([
+            '2026-05-06',
+            o['Journal'],
+            'Oxford University Press',
+            format_cost(o),
+            "https://academic.oup.com/%s" % o['code'].lower() if o['code'] else '',
+            '',
+        ])
