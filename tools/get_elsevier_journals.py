@@ -40,7 +40,7 @@ for o in read('elsevier-2026-05-06.xlsx'):
 
     writer.writerow([
         '2026-05-06',
-        o['Title'],
+        o['Title'].replace(" Article Publishing Charge", ""),
         'Elsevier',
         amt,
         f"https://www.elsevier.com/locate/issn/{o['ISSN']}",
