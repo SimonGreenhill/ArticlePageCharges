@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # coding=utf-8
 """..."""
-
+import csv
 import re
+import sys
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 
 URL = "https://www.cell.com/open-access"
@@ -18,8 +18,8 @@ def get_cost(text):
     if len(m):
         return m[0].replace(",", "")
     else:
-        print("ERROR PARSING COST FROM:")
-        print(text)
+        print("ERROR PARSING COST FROM:", file=sys.stderr)
+        print(text, file=sys.stderr)
         return None
 
 driver = webdriver.Firefox()
@@ -31,6 +31,9 @@ table = soup.find(id="pricingTbl")
 
 header = [x.text for x in table.find_all('th')]
 
+writer = csv.writer(sys.stdout)
+writer.writerow(['Date', 'Journal', 'Publisher', 'Cost', 'URL', 'Comment'])
+
 for row in table.find_all("tr"):
     cells = dict(zip(header, [c.text for c in row.find_all('td')]))
     if not len(cells):  # empty row
@@ -41,17 +44,16 @@ for row in table.find_all("tr"):
     try:
         cost_text = cells['Open access fee (GBP, EURO, USD)(excluding taxes)']
     except KeyError:
-        print("Failure parsing:")
-        print(row.find_all('td'))
+        print("Failure parsing:", file=sys.stderr)
+        print(row.find_all('td'), file=sys.stderr)
         raise
-    
-    
+
     cost = get_cost(cost_text)
-    #Date,Journal,Publisher,Cost,URL,Comment
-    print("2024-01-14,%s,Cell Press,%s,%s,'%s'" % (
+    writer.writerow([
+        '2024-01-14',
         cells['Journal'],
+        'Cell Press',
         cost,
         URL,
-        cost_text.replace("'", '"')  # should use csv writer
-    ))
-
+        cost_text,
+    ])

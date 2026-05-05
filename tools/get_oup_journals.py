@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # coding=utf-8
 """..."""
+import csv
+import sys
 
 import requests
 from io import BytesIO
@@ -30,19 +32,15 @@ def format_cost(o):
     return "%s%s" % (curr, o["2024 price"])
 
 
-def format_journal(j):
-    if ',' in j:
-        return '"%s"' % j
-    else:
-        return j
-
+writer = csv.writer(sys.stdout)
+writer.writerow(['Date', 'Journal', 'Publisher', 'Cost', 'URL', 'Comment'])
 
 for o in read(load(URL)):
-    #Date,Journal,Publisher,Cost,URL,Comment
-    print("2025-03-28,%s,Oxford University Press,%s,%s,%s" % (
-        format_journal(o['Journal']),
+    writer.writerow([
+        '2025-03-28',
+        o['Journal'],
+        'Oxford University Press',
         format_cost(o),
         "https://academic.oup.com/%s" % o['code'].lower() if o['code'] else '',
-        ""
-    ))
-
+        '',
+    ])

@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 # coding=utf-8
 """..."""
-
-import requests
-from io import BytesIO
+import csv
+import sys
 
 from openpyxl import load_workbook
 
@@ -17,9 +16,6 @@ def read(filename):
             yield dict(zip(header, [c.value for c in row]))
             #d['URL'] = row[1].hyperlink.target
 
-#SPECIAL = {
-#    '1000 Euro full-lenght (for society members 800 Euro), 800 Euro Scientific Note (for society members 600 Euro)': 
-#}
 
 def format_price(p):
     if p is None:
@@ -33,36 +29,25 @@ def format_price(p):
     except:
         raise ValueError("?? %s" % p)
 
-def format_title(t):
-    if ',' in t:
-        return "'%s'" % t
-    else:
-        return t
 
+writer = csv.writer(sys.stdout)
+writer.writerow(['Date', 'Journal', 'Publisher', 'Cost', 'URL', 'Comment'])
 
 special_cases = []
 for o in read('DeGruyter_Journal_Price_List_2025__EUR__2024-11-10.xlsx'):
-    # Date,Journal,Publisher,Cost,URL,Comment
     try:
         price, comment = format_price(o['APC EUR'])
     except Exception as e:
-        #print('ERROR', e)
         special_cases.append(o)
-        pass
-    print("2025-31-03,%s,De Gruyter,%s,%s,%s" % (
-        format_title(o['Title'].strip()),
+        continue
+    writer.writerow([
+        '2025-31-03',
+        o['Title'].strip(),
+        'De Gruyter',
         price,
         o['URL'],
-        comment
-    ))
+        comment,
+    ])
 
-print("============")
 for o in special_cases:
-    print("2025-31-03,%s,De Gruyter,%s,%s,%s" % (
-        o['Title'].strip(),
-        "?????",
-        o['URL'],
-        o['APC EUR']
-    ))
-
-    
+    print(f"UNPARSED: {o['Title'].strip()} — {o['APC EUR']}", file=sys.stderr)
