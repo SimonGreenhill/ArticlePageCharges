@@ -6,6 +6,8 @@ import sys
 
 from openpyxl import load_workbook
 
+# https://www.degruyterbrill.com/publishing/for-librarians/ejournals
+
 def read(filename):
     wb = load_workbook(filename = filename)
     header = None
@@ -34,14 +36,14 @@ writer = csv.writer(sys.stdout)
 writer.writerow(['Date', 'Journal', 'Publisher', 'Cost', 'URL', 'Comment'])
 
 special_cases = []
-for o in read('DeGruyter_Journal_Price_List_2025__EUR__2024-11-10.xlsx'):
+for o in read('DeGruyter_Journal_Price_List_2026__EUR__2026-02-20.xlsx'):
     try:
         price, comment = format_price(o['APC EUR'])
     except Exception as e:
         special_cases.append(o)
         continue
     writer.writerow([
-        '2025-31-03',
+        '2026-02-20',
         o['Title'].strip(),
         'De Gruyter',
         price,
@@ -49,5 +51,6 @@ for o in read('DeGruyter_Journal_Price_List_2025__EUR__2024-11-10.xlsx'):
         comment,
     ])
 
+print('\n\n')
 for o in special_cases:
     print(f"UNPARSED: {o['Title'].strip()} — {o['APC EUR']}", file=sys.stderr)
